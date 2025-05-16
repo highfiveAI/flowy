@@ -28,7 +28,7 @@ class MeetingParticipant(BaseModel):
     role: str
 
 class MeetingInfo(BaseModel):
-    subject: str
+    subj: str
     date: str
     start_time: str
     end_time: str
@@ -84,7 +84,7 @@ def create_meeting_pdf(meeting_info: MeetingInfo) -> str:
     
     # 회의 기본 정보 테이블
     meeting_data = [
-        ["회의 주제", meeting_info.subject],
+        ["회의 주제", meeting_info.subj],
         ["회의 일자", meeting_info.date],
         ["회의 시간", f"{meeting_info.start_time} ~ {meeting_info.end_time}"]
     ]
@@ -189,12 +189,12 @@ async def send_email(request: EmailRequest):
         
         # 이메일 메시지 생성
         message = MessageSchema(
-            subject=f"[FLOWY] {request.meeting_info.date} '{request.meeting_info.subject}' 회의록",
+            subject=f"[FLOWY] {request.meeting_info.date} '{request.meeting_info.subj}' 회의록",
             recipients=[request.email],
             body=f"""
             안녕하세요, {request.name}님 FLOWY입니다.<br><br>
 
-            {request.meeting_info.date} {request.meeting_info.start_time}에 진행된 '{request.meeting_info.subject}' 회의록을 전달드립니다.<br><br>
+            {request.meeting_info.date} {request.meeting_info.start_time}에 진행된 '{request.meeting_info.subj}' 회의록을 전달드립니다.<br><br>
 
             회의의 주요 내용과 논의 결과는 첨부된 PDF 파일에서 확인하실 수 있습니다.<br><br>
 
