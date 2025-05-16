@@ -5,6 +5,15 @@ from typing import Any
 import time
 # import traceback
 
+##dohaemil 수정 시작##
+from fastapi import FastAPI, Request
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
+from app.routers.email import router as email_router
+import os
+##dohaemil 수정 끝##
+
 from app.core.config import settings
 # from app.routers import stt, summarization, action_assignment, feedback # <--- 이 줄을 아래로 이동
 
@@ -90,3 +99,19 @@ async def read_root():
     }
 
 # CORS (필요시)
+
+##dohaemil 수정 시작##
+# 템플릿 디렉토리 설정 (절대 경로 사용)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+# 정적 파일 디렉토리 설정 (절대 경로 사용)
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+
+# API 라우터 등록
+app.include_router(email_router, prefix="/api/email", tags=["email"])
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("email_form.html", {"request": request}) 
+##dohaemil 수정 끝##

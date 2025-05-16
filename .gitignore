@@ -10,3 +10,8 @@ dist/
 build/
 venv/
 *.log
+
+##dohaemil 수정 시작##
+.history/
+.env*
+##dohaemil 수정 끝##
