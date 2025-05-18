@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Depends, HTTPException
 from openai import OpenAI
 from contextlib import asynccontextmanager
-from typing import Any
-import time
-# import traceback
+from typing import Any # FastAPI 인스턴스 타입 힌팅용
+
+from app.routers import analysis # 라우터 임포트
+# 의존성 함수는 lifespan에서만 사용 (dependencies.py에서 가져옴)
+from app.dependencies import initialize_stt_pipeline, get_openai_client as dep_get_openai_client
 
 ##dohaemil 수정 시작##
 from fastapi import FastAPI, Request
@@ -13,11 +15,6 @@ from fastapi.responses import HTMLResponse
 from app.routers.email import router as email_router
 import os
 ##dohaemil 수정 끝##
-
-from app.core.config import settings
-# from app.routers import stt, summarization, action_assignment, feedback # <--- 이 줄을 아래로 이동
-
-app_state: dict[str, Any] = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -88,17 +85,8 @@ app.include_router(feedback.router, prefix="/api/feedback", tags=["4. 회의 내
 
 @app.get("/", tags=["Root"])
 async def read_root():
-    # ... (이전과 동일) ...
-    stt_status = "사용 가능" if app_state.get("stt_pipeline") else "사용 불가 (초기화 실패 또는 진행 중)"
-    openai_status = "사용 가능" if app_state.get("openai_client") else "사용 불가 (초기화 실패 또는 진행 중)"
-    return {
-        "message": "회의 분석 API에 오신 것을 환영합니다! /docs 경로에서 API 문서를 확인하세요.",
-        "stt_service_status": stt_status,
-        "openai_service_status": openai_status,
-        "current_time_kst": time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime(time.time()))
-    }
+    return {"message": "Flowy 회의록 분석 API에 오신 것을 환영합니다! (v0.1.0)"}
 
-# CORS (필요시)
 
 ##dohaemil 수정 시작##
 # 템플릿 디렉토리 설정 (절대 경로 사용)

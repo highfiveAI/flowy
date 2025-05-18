@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
