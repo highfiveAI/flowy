@@ -192,9 +192,9 @@ def create_meeting_pdf(meeting_info: MeetingInfo) -> str:
                 sentence = item.get("sentence", "")
                 reason = item.get("reason", "")
                 if sentence and reason:
-                    lines.append(f"무관한 문장: {sentence} / 이유: {reason}")
+                    lines.append(f"주제와 무관한 문장: {sentence} / 이유: {reason}")
                 elif sentence:
-                    lines.append(f"무관한 문장: {sentence}")
+                    lines.append(f"주제와 무관한 문장: {sentence}")
                 elif reason:
                     lines.append(f"이유: {reason}")
         feedback_text = "\n".join(lines)
