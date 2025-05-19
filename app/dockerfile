@@ -4,33 +4,34 @@ FROM continuumio/miniconda3:latest
 # 작업 디렉토리 설정
 WORKDIR /app
 
-# 필요한 환경변수 설정
+# 환경변수 설정 (pyc 파일 생성 방지, 로그 버퍼링 방지)
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# conda 환경 만들기 + ffmpeg 설치
+# conda 최신화 + 가상환경 생성 및 필수 패키지 설치
 RUN conda update -n base -c defaults conda && \
     conda create -n flowy python=3.12 -y && \
     conda install -n flowy -c conda-forge ffmpeg tokenizers -y
 
-# Conda 환경 활성화 설정
-SHELL ["conda", "run", "-n", "flowy", "/bin/bash", "-c"]
-
-# requirements 복사
+# requirements.txt 복사
 COPY requirements.txt .
 
-# PyTorch 계열 패키지 (GPU 지원 버전은 별도 인덱스 필요)
-RUN pip install --no-cache-dir \
+# PyTorch 패키지 설치 (GPU 버전 사용 시)
+RUN conda run -n flowy pip install --no-cache-dir \
     torch==2.7.0+cu118 \
     torchaudio==2.7.0+cu118 \
     torchvision==0.22.0+cu118 \
     --extra-index-url https://download.pytorch.org/whl/cu118
 
-# 나머지 패키지 설치 (tokenizers, torch 등은 이미 설치되어 있음)
-RUN pip install --no-cache-dir -r requirements.txt
+# 나머지 패키지 설치
+RUN conda run -n flowy pip install --no-cache-dir -r requirements.txt
 
 # 앱 소스 복사
 COPY . .
 
-# FastAPI 실행
-CMD ["conda", "run", "-n", "flowy", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# start.sh 복사 및 실행 권한 부여
+COPY start.sh .
+RUN chmod +x start.sh
+
+# 실행 명령 (start.sh 안에서 conda activate 후 uvicorn 실행)
+CMD ["./start.sh"]
