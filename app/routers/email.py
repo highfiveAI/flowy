@@ -223,28 +223,29 @@ async def send_email(request: Request):
             USE_CREDENTIALS=True
         )
         
-        # 이메일 메시지 생성
-        message = MessageSchema(
-            subject=f"[FLOWY] {meeting_info.dt} '{meeting_info.subj}' 회의록",
-            recipients=[email],
-            body=f"""
-            안녕하세요, {name}님 FLOWY입니다.<br><br>
+        # 이메일 메시지 생성 및 발송 (참석자 각각에게)
+        for participant in meeting_info.info_n:
+            name = participant.name
+            email = participant.email
+            message = MessageSchema(
+                subject=f"[FLOWY] {meeting_info.dt} '{meeting_info.subj}' 회의록",
+                recipients=[email],
+                body=f"""
+                안녕하세요, {name}님 FLOWY입니다.<br><br>
 
-            {meeting_info.dt}에 진행된 '{meeting_info.subj}' 회의록을 전달드립니다.<br><br>
+                {meeting_info.dt}에 진행된 '{meeting_info.subj}' 회의록을 전달드립니다.<br><br>
 
-            회의의 주요 내용과 논의 결과는 첨부된 PDF 파일에서 확인하실 수 있습니다.<br><br>
+                회의의 주요 내용과 논의 결과는 첨부된 PDF 파일에서 확인하실 수 있습니다.<br><br>
 
-            감사합니다.<br><br>
+                감사합니다.<br><br>
 
-            FLOWY 드림
-            """,
-            subtype="html",
-            attachments=[{"file": pdf_path}]
-        )
-        
-        # 이메일 발송
-        fm = FastMail(conf)
-        await fm.send_message(message)
+                FLOWY 드림
+                """,
+                subtype="html",
+                attachments=[{"file": pdf_path}]
+            )
+            fm = FastMail(conf)
+            await fm.send_message(message)
         
         return {"message": "이메일이 성공적으로 발송되었습니다."}
         
