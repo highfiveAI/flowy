@@ -12,6 +12,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from datetime import datetime
 import json
+from collections import defaultdict
 
 # 환경 변수 로딩
 load_dotenv(override=True)
@@ -35,6 +36,11 @@ class MeetingInfo(BaseModel):
     summary_result: str
     action_items_result: List[dict] = []
     feedback_result: str
+
+def safe_paragraph(text, style):
+    if text:
+        text = text.replace('<br>', '').replace('<br/>', '')
+    return Paragraph(text, style)
 
 def create_meeting_pdf(meeting_info: MeetingInfo) -> str:
     # PDF 파일 저장 경로 설정
@@ -74,7 +80,7 @@ def create_meeting_pdf(meeting_info: MeetingInfo) -> str:
     story = []
     
     # 회의 정보 섹션
-    story.append(Paragraph("회의 정보", styles['KoreanTitle']))
+    story.append(safe_paragraph("회의 정보", styles['KoreanTitle']))
     
     # 회의 기본 정보 테이블
     meeting_data = [
@@ -97,7 +103,7 @@ def create_meeting_pdf(meeting_info: MeetingInfo) -> str:
     story.append(Spacer(1, 20))
     
     # 참석자 명단
-    story.append(Paragraph("참석자 명단", styles['KoreanHeading']))
+    story.append(safe_paragraph("참석자 명단", styles['KoreanHeading']))
     participants_data = [["이름", "이메일", "역할"]]
     for participant in meeting_info.info_n:
         participants_data.append([
@@ -122,45 +128,58 @@ def create_meeting_pdf(meeting_info: MeetingInfo) -> str:
     story.append(Spacer(1, 20))
     
     # 회의 요약
-    story.append(Paragraph("회의 요약", styles['KoreanHeading']))
-    summary_text = ""
+    story.append(safe_paragraph("회의 요약", styles['KoreanHeading']))
+    summary_lines = []
     try:
         summary_json = json.loads(meeting_info.summary_result)
-        # summary가 있고, 리스트에 내용이 있으면 첫 번째 값 출력, 없으면 공백
         if isinstance(summary_json, dict) and "summary" in summary_json:
             if summary_json["summary"]:
-                summary_text = summary_json["summary"][0]
-            else:
-                summary_text = ""
-        else:
-            summary_text = ""
+                summary_lines = [line.strip() for line in summary_json["summary"] if line.strip()]
     except Exception:
-        summary_text = ""
-    story.append(Paragraph(summary_text, styles['KoreanNormal']))
+        pass
+
+    if summary_lines:
+        for line in summary_lines:
+            story.append(safe_paragraph(line, styles['KoreanNormal']))
+    else:
+        story.append(safe_paragraph("", styles['KoreanNormal']))
     story.append(Spacer(1, 20))
     
     # 역할분담
-    story.append(Paragraph("역할분담", styles['KoreanHeading']))
+    story.append(safe_paragraph("역할분담", styles['KoreanHeading']))
     if not meeting_info.action_items_result:
-        story.append(Paragraph("역할분담 내용이 없습니다.", styles['KoreanNormal']))
+        story.append(safe_paragraph("역할분담 내용이 없습니다.", styles['KoreanNormal']))
     else:
-        tasks_lines = []
+        # name+role별로 tasks를 모으는 dict 생성
+        task_map = defaultdict(list)
         for task in meeting_info.action_items_result:
-            name = task.get('assignee', '')
+            name = task.get('assignee', '') or task.get('name', '')
             role = task.get('role', '')
-            task_content = task.get('task', '')
-            line = f"{name}({role}) : {task_content}" if role else f"{name} : {task_content}"
-            tasks_lines.append(line)
-        tasks_text = "<br>".join(tasks_lines)
-        story.append(Paragraph(tasks_text, styles['KoreanNormal']))
+            task_content = task.get('task', '') or task.get('tasks', '')
+            key = (name, role)
+            if isinstance(task_content, list):
+                task_map[key].extend([str(t) for t in task_content if t])
+            elif task_content:
+                task_map[key].append(str(task_content))
+        for (name, role), tasks in task_map.items():
+            if name and role and tasks:
+                line = f"{name}({role}) : {', '.join(tasks)}"
+            elif name and role:
+                line = f"{name}({role})"
+            elif name and tasks:
+                line = f"{name} : {', '.join(tasks)}"
+            elif role and tasks:
+                line = f"({role}) : {', '.join(tasks)}"
+            else:
+                line = f"{name}{role}{', '.join(tasks)}"
+            story.append(safe_paragraph(line, styles['KoreanNormal']))
     story.append(Spacer(1, 20))
     
     # 회의 피드백
-    story.append(Paragraph("회의 피드백", styles['KoreanHeading']))
+    story.append(safe_paragraph("회의 피드백", styles['KoreanHeading']))
     feedback_text = ""
     try:
         feedback_json = json.loads(meeting_info.feedback_result)
-        # representative_unnecessary가 있고, 리스트에 내용이 있으면 reason만 출력
         if (
             isinstance(feedback_json, dict)
             and "representative_unnecessary" in feedback_json
@@ -171,7 +190,7 @@ def create_meeting_pdf(meeting_info: MeetingInfo) -> str:
             feedback_text = ""
     except Exception:
         feedback_text = ""
-    story.append(Paragraph(feedback_text, styles['KoreanNormal']))
+    story.append(safe_paragraph(feedback_text, styles['KoreanNormal']))
     
     # PDF 생성
     doc.build(story)
