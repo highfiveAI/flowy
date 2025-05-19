@@ -1,0 +1,40 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+
+# Logs
+*.log
+
+# Editor/IDE settings
+.history/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env files
+# .env
+
+# Media or temp (optional: comment out if needed)
+*.m4a
+*.wav
+*.mp3
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml

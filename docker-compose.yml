@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  flowy-api:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    container_name: flowy-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./temp_audio_uploads:/app/temp_audio_uploads
+    restart: always
