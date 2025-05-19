@@ -180,17 +180,32 @@ def create_meeting_pdf(meeting_info: MeetingInfo) -> str:
     feedback_text = ""
     try:
         feedback_json = json.loads(meeting_info.feedback_result)
-        if (
-            isinstance(feedback_json, dict)
-            and "representative_unnecessary" in feedback_json
-            and feedback_json["representative_unnecessary"]
-        ):
-            feedback_text = feedback_json["representative_unnecessary"][0].get("reason", "")
-        else:
-            feedback_text = ""
+        lines = []
+        if isinstance(feedback_json, dict):
+            necessary = feedback_json.get("necessary_ratio", None)
+            unnecessary = feedback_json.get("unnecessary_ratio", None)
+            if necessary is not None and unnecessary is not None:
+                lines.append(f"주제와 일치하는 내용 : {necessary}%")
+                lines.append(f"주제와 무관한 내용 : {unnecessary}%")
+            rep_unnecessary = feedback_json.get("representative_unnecessary", [])
+            for item in rep_unnecessary:
+                sentence = item.get("sentence", "")
+                reason = item.get("reason", "")
+                if sentence and reason:
+                    lines.append(f"주제와 무관한 문장: {sentence} / 이유: {reason}")
+                elif sentence:
+                    lines.append(f"주제와 무관한 문장: {sentence}")
+                elif reason:
+                    lines.append(f"이유: {reason}")
+        feedback_text = "\n".join(lines)
     except Exception:
         feedback_text = ""
-    story.append(safe_paragraph(feedback_text, styles['KoreanNormal']))
+    # 여러 줄을 각각 Paragraph로 출력
+    if feedback_text:
+        for line in feedback_text.split("\n"):
+            story.append(safe_paragraph(line, styles['KoreanNormal']))
+    else:
+        story.append(safe_paragraph("", styles['KoreanNormal']))
     
     # PDF 생성
     doc.build(story)
